@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Watermarking Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h2 class="text-center">🔊 Audio Watermarking Tool</h2>
+
+        <div class="row">
+            <!-- Embed Watermark -->
+            <div class="col-md-6">
+                <div class="card p-4 shadow-sm">
+                    <h4>🎼 Embed Watermark</h4>
+                    <form id="embedForm">
+                        <div class="mb-3">
+                            <label class="form-label">Select Audio File:</label>
+                            <input type="file" id="inputAudio" name="audio" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Watermark Message:</label>
+                            <input type="text" id="watermarkMessage" name="watermark_message" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Embed Watermark</button>
+                    </form>
+                    <div id="embedResult" class="mt-2 alert d-none"></div>
+                </div>
+            </div> 
+            <!-- Detect Watermark -->
+            <div class="col-md-6">
+                <div class="card p-4 shadow-sm">
+                    <h4>🔍 Detect Watermark</h4>
+                    <form id="detectForm">
+                        <div class="mb-3">
+                            <label class="form-label">Select Audio File:</label>
+                            <input type="file" id="detectAudio" name="audio" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-success">Detect Watermark</button>
+                    </form>
+                    <div id="detectResult" class="mt-2 alert d-none"></div>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4></h4>
+            <button onclick="window.location.href='/'" class="btn btn-primary">🔄 Refresh</button>
+        </div>
+        <div class="card shadow-sm p-4">
+            <form action="/convert-binary/" method="post">
+                <div class="mb-3">
+                    <label class="form-label">Enter Binary:</label>
+                    <textarea class="form-control" name="binary" placeholder="Enter binary to convert to text..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-success w-100">Convert to Text</button>
+                
+            </form>
+        
+            {% if converted_text %}
+            <div class="mt-4">
+                <h5>Text Output:</h5>
+                <textarea class="form-control" readonly>{{ converted_text }}</textarea>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Uploaded Files Section -->
+        <div class="card p-4 shadow-sm mt-4">
+            <h4>📂 Uploaded Files</h4>
+            <ul id="fileList" class="list-group"></ul>
+        </div>
+    </div>
+
+    <script>
+    async function fetchFiles() {
+        try {
+            const response = await fetch("/uploads/");
+            const data = await response.json();
+            const fileList = document.getElementById("fileList");
+            fileList.innerHTML = "";
+            data.uploaded_files.forEach(file => {
+                let listItem = document.createElement("li");
+                listItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                listItem.innerHTML = `
+                    ${file}
+                    <div>
+                        <a href="/download/${file}" class="btn btn-sm btn-primary">⬇ Download</a>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFile('${file}')">🗑 Delete</button>
+                    </div>
+                `;
+                fileList.appendChild(listItem);
+            });
+        } catch (error) {
+            console.error("Error fetching files:", error);
+        }
+    }
+    async function deleteFile(filename) {
+        if (confirm(`Are you sure you want to delete ${filename}?`)) {
+            try {
+                const response = await fetch(`/delete/${filename}`, { method: "DELETE" });
+                if (response.ok) {
+                    alert("File deleted successfully.");
+                    fetchFiles();  // Refresh file list
+                } else {
+                    alert("Failed to delete file.");
+                }
+            } catch (error) {
+                alert("Error deleting file.");
+            }
+        }}
+        
+        document.getElementById("embedForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append("audio", document.getElementById("inputAudio").files[0]);
+            formData.append("watermark_message", document.getElementById("watermarkMessage").value);
+
+            try {
+                const response = await fetch("/embed/", { method: "POST", body: formData });
+                const result = await response.json();
+                const embedResult = document.getElementById("embedResult");
+                embedResult.classList.remove("d-none");
+                if (response.ok) {
+                    embedResult.classList.add("alert-success");
+                    embedResult.innerText = "✅ " + result.message;
+                    fetchFiles();
+                } else {
+                    embedResult.classList.add("alert-danger");
+                    embedResult.innerText = "❌ Error: " + result.detail;
+                }
+            } catch (error) {
+                embedResult.classList.add("alert-danger");
+                embedResult.innerText = "❌ Network error. Check backend.";
+            }
+        });
+
+        document.getElementById("detectForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append("audio", document.getElementById("detectAudio").files[0]);
+
+            try {
+                const response = await fetch("/detect/", { method: "POST", body: formData });
+                const result = await response.json();
+                const detectResult = document.getElementById("detectResult");
+                detectResult.classList.remove("d-none");
+                if (response.ok) {
+                    detectResult.classList.add("alert-success");
+                    detectResult.innerText = "✅ Watermark detected: " + result.detected_watermark;
+                } else {
+                    detectResult.classList.add("alert-danger");
+                    detectResult.innerText = "❌ Error: " + result.detail;
+                }
+            } catch (error) {
+                detectResult.classList.add("alert-danger");
+                detectResult.innerText = "❌ Network error. Check backend.";
+            }
+        });
+
+        // Load file list on page load
+        fetchFiles();
+    </script>
+</body>
+</html>

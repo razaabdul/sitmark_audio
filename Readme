@@ -1,0 +1,74 @@
+Watermarking API
+
+Overview
+
+This project provides an API for embedding and detecting watermarks in audio files. It uses a command-line interface (CLI) tool to process .wav files, ensuring audio integrity while embedding hidden data.
+
+Features
+
+
+Embed Watermark: Convert a text message into a binary watermark and embed it into an audio file.
+
+Detect Watermark: Scan an audio file for the presence of an embedded watermark and retrieve its content.
+
+Adaptive Processing: Adjusts watermark parameters based on loudness and dominant frequency of the input audio.
+
+Requirements
+
+Python 3.x
+
+FastAPI
+
+FFmpeg, SoX 
+
+Pydub
+
+CLI Binaries: SitMarkAudio2MEmbedderCLI, SitMarkAudio2MDetectorCLI
+
+Installation
+
+pip install fastapi uvicorn pydub numpy scipy
+
+Ensure that FFmpeg and SoX are installed and accessible in your system path.
+
+Usage
+
+Running the Server
+
+uvicorn main:app --host 0.0.0.0 --port 8000
+
+API Endpoints
+
+1. Embed Watermark
+
+Endpoint: POST /embed/
+Parameters:
+
+audio: Uploaded WAV file
+
+watermark_message: Text message to embed
+
+2. Detect Watermark
+
+Endpoint: POST /detect/
+Parameters:
+
+audio: Uploaded WAV file
+
+Response:
+
+message: Success or failure message
+
+detected_watermark: The extracted watermark message (if found)
+
+watermark_length: Length of the detected watermark (in bits)
+
+File Structure
+
+project-folder/
+│-- main.py  # FastAPI application
+│-- binaries/
+│   │-- SitMarkAudio2MEmbedderCLI
+│   │-- SitMarkAudio2MDetectorCLI
+│-- uploads/  # Processed audio files
+

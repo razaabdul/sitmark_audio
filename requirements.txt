@@ -1,0 +1,7 @@
+fastapi
+jinja2
+uvicorn 
+pydub
+sox
+python-multipart
+librosa
